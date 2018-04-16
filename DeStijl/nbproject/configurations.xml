@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="100">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="destijl_init"
+                   displayName="destijl_init"
+                   projectFiles="true">
+      <logicalFolder name="header" displayName="header" projectFiles="true">
+        <itemPath>../destijl_init/header/functions.h</itemPath>
+      </logicalFolder>
+      <logicalFolder name="src" displayName="src" projectFiles="true">
+        <itemPath>../destijl_init/src/functions.cpp</itemPath>
+      </logicalFolder>
+      <itemPath>../destijl_init/Makefile</itemPath>
+      <itemPath>../destijl_init/main.cpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="src" displayName="src" projectFiles="true">
+      <itemPath>../src/definitions.h</itemPath>
+      <itemPath>../src/image.cpp</itemPath>
+      <itemPath>../src/image.h</itemPath>
+      <itemPath>../src/message.cpp</itemPath>
+      <itemPath>../src/message.h</itemPath>
+      <itemPath>../src/monitor.cpp</itemPath>
+      <itemPath>../src/monitor.h</itemPath>
+      <itemPath>../src/robot.cpp</itemPath>
+      <itemPath>../src/robot.h</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceRootList>
+    <Elem>../destijl_init</Elem>
+    <Elem>../src</Elem>
+  </sourceRootList>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Debug" type="1">
+      <toolsSet>
+        <compilerSet>GNU|GNU</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <commandLine>-D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__MERCURY__ -I/usr/xenomai/include/alchemy -g -D_WITH_TRACE_ -I/usr/xenomai/include/ -I/usr/xenomai/include/mercury -MMD -MP</commandLine>
+        </ccTool>
+        <linkerTool>
+          <commandLine>-D_GNU_SOURCE -D_REENTRANT -fasynchronous-unwind-tables -D__MERCURY__ -I/usr/xenomai/include/alchemy -L/usr/xenomai/lib -lalchemy -lcopperplate -lmercury -L/opt/vc/lib -I/usr/local/include -lopencv_highgui -lopencv_core -lopencv_imgproc -Wl,--no-as-needed -lalchemy -lcopperplate /usr/xenomai/lib/xenomai/bootstrap.o -Wl,--wrap=main -Wl,--dynamic-list=/usr/xenomai/lib/dynlist.ld -L/usr/xenomai/lib -lmercury -lpthread -lrt -Wl,-rpath /usr/xenomai/lib -lopencv_highgui -lopencv_core -lopencv_imgcodecs -lraspicam_cv -lopencv_imgproc -lpthread</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="../destijl_init/Makefile" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../destijl_init/header/functions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../destijl_init/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../destijl_init/src/functions.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/definitions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/image.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/image.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/message.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/message.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/monitor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/monitor.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/robot.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/robot.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
+    <conf name="Release" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <developmentMode>5</developmentMode>
+        </cTool>
+        <ccTool>
+          <developmentMode>5</developmentMode>
+        </ccTool>
+        <fortranCompilerTool>
+          <developmentMode>5</developmentMode>
+        </fortranCompilerTool>
+        <asmTool>
+          <developmentMode>5</developmentMode>
+        </asmTool>
+      </compileType>
+      <item path="../destijl_init/Makefile" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../destijl_init/header/functions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../destijl_init/main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../destijl_init/src/functions.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/definitions.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/image.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/image.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/message.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/message.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/monitor.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/monitor.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../src/robot.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../src/robot.h" ex="false" tool="3" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

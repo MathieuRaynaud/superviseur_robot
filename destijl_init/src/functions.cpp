@@ -223,3 +223,22 @@ void write_in_queue(RT_QUEUE *queue, MessageToMon msg) {
     memcpy(buff, &msg, sizeof (MessageToMon));
     rt_queue_send(&q_messageToMon, buff, sizeof (MessageToMon), Q_NORMAL);
 }
+
+/************************ A NOUS ! *************************/
+
+void f_displayBattery(void *arg) {
+    rt_task_set_periodic(NULL, TM_NOW, 900000000); // en ns
+    int level = -1;
+    while (1) {
+        
+        rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
+        if (robotStarted) {
+            level = send_command_to_robot(DMB_GET_VBAT);
+        }   
+        rt_mutex_release(&mutex_robotStarted);
+        
+        rt_task_wait_period(NULL);
+        printf("Coucou test %d\n", level);
+    }
+        
+}

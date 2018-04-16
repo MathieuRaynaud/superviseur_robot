@@ -25,6 +25,7 @@ RT_TASK th_receiveFromMon;
 RT_TASK th_openComRobot;
 RT_TASK th_startRobot;
 RT_TASK th_move;
+RT_TASK th_displayBattery;
 
 // Déclaration des priorités des taches
 int PRIORITY_TSERVER = 30;
@@ -33,6 +34,7 @@ int PRIORITY_TMOVE = 10;
 int PRIORITY_TSENDTOMON = 25;
 int PRIORITY_TRECEIVEFROMMON = 22;
 int PRIORITY_TSTARTROBOT = 20;
+int PRIORITY_TBATTERY = 5;
 
 RT_MUTEX mutex_robotStarted;
 RT_MUTEX mutex_move;
@@ -151,6 +153,21 @@ void initStruct(void) {
         printf("Error msg queue create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
+    
+    /************************ A NOUS ! *************************/
+    
+    /* Creation des mutex */
+    
+    /* Creation du semaphore */
+    
+    /* Creation des taches */
+     if (err = rt_task_create(&th_displayBattery, "th_displayBattery", 0, PRIORITY_TBATTERY, 0)) {
+        printf("Error task create: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Creation des files de messages */
+    
 }
 
 void startTasks() {
@@ -174,11 +191,19 @@ void startTasks() {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
-    if (err = rt_task_start(&th_move, &f_move, NULL)) {
+    /*if (err = rt_task_start(&th_move, &f_move, NULL)) {
+        printf("Error task start: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }*/
+    
+    if (err = rt_task_start(&th_server, &f_server, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
-    if (err = rt_task_start(&th_server, &f_server, NULL)) {
+    
+    /************************ A NOUS ! *************************/
+    
+    if (err = rt_task_start(&th_displayBattery, &f_displayBattery, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
@@ -188,4 +213,5 @@ void deleteTasks() {
     rt_task_delete(&th_server);
     rt_task_delete(&th_openComRobot);
     rt_task_delete(&th_move);
+    rt_task_delete(&th_displayBattery);
 }

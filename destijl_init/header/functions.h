@@ -67,5 +67,9 @@ void f_openComRobot(void * arg);
 void f_move(void *arg);
 void f_startRobot(void *arg);
 
+/************************ A NOUS ! *************************/
+
+void f_displayBattery(void *arg);
+
 #endif /* FUNCTIONS_H */
 
