@@ -164,7 +164,9 @@ void f_startRobot(void * arg) {
 #ifdef _WITH_TRACE_
         printf("%s : sem_startRobot arrived => Start robot\n", info.name);
 #endif
+        rt_mutex_acquire(&mutex_com, TM_INFINITE);
         err = send_command_to_robot(DMB_START_WITHOUT_WD);
+        rt_mutex_release(&mutex_com);
         if (err == 0) {
 #ifdef _WITH_TRACE_
             printf("%s : the robot is started\n", info.name);
@@ -189,6 +191,8 @@ void f_move(void *arg) {
     rt_task_inquire(NULL, &info);
     printf("Init %s\n", info.name);
     rt_sem_p(&sem_barrier, TM_INFINITE);
+    
+    int err;
 
     /* PERIODIC START */
 #ifdef _WITH_TRACE_
@@ -207,7 +211,10 @@ void f_move(void *arg) {
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         if (robotStarted) {
             rt_mutex_acquire(&mutex_move, TM_INFINITE);
-            send_command_to_robot(move);
+            rt_mutex_acquire(&mutex_com, TM_INFINITE);
+            err = send_command_to_robot(move);
+            printf("Retour send command to robot (move) : %d\n", err);
+            rt_mutex_release(&mutex_com);
             rt_mutex_release(&mutex_move);
 #ifdef _WITH_TRACE_
             printf("%s: the movement %c was sent\n", info.name, move);
@@ -227,27 +234,37 @@ void write_in_queue(RT_QUEUE *queue, MessageToMon msg) {
 /************************ A NOUS ! *************************/
 
 void f_displayBattery(void *arg) {
+    printf("   ****** Thread battery launched\n");
     rt_task_set_periodic(NULL, TM_NOW, 900000000); // en ns
     int level;
-    char * battery = "Battery level : ";
-    char * lvl;
     while (1) {
-        lvl = "0";
+        printf("   ****** Thread battery running\n");
         rt_task_wait_period(NULL);
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         if (robotStarted) {
+            rt_mutex_acquire(&mutex_com, TM_INFINITE);
             level = send_command_to_robot(DMB_GET_VBAT);
+            rt_mutex_release(&mutex_com);
+            printf("   ****** After send to robot %d\n", level);
             switch (level){
                 case -1 :
-                    send_message_to_monitor(HEADER_STM_NO_ACK,"Cannot get battery level : robot error");
+                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : robot error");
+                    break;
+                case -2 :
+                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : unknown command");
                     break;
                 case -3 :
-                    send_message_to_monitor(HEADER_STM_NO_ACK,"Cannot get battery level : connexion lost");
+                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : time out");
+                    break;
+                case -4 :
+                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : checksum error");
                     break;
                 default :
-                    lvl += level;
-                    strcat(battery,lvl);
-                    send_message_to_monitor(HEADER_STM_MES, battery);
+                    printf("   ****** Default b %d\n", level);
+                    level += 48;
+                    printf("   ****** Default c %d\n", level);
+                    send_message_to_monitor(HEADER_STM_BAT, &level);
+                    printf("   ****** Default d %d\n", level);
                     break;
             }
         }   
@@ -256,6 +273,7 @@ void f_displayBattery(void *arg) {
 }
 
 void f_errorsCounter(void *arg) {
+    printf("***$****Errors counter called*****$*****\n");
     rt_mutex_acquire(&mutex_errorsCounter, TM_INFINITE);
     errorsCounter++;
     if (errorsCounter >= 3){

@@ -41,6 +41,7 @@ RT_MUTEX mutex_move;
 
 /************************ A NOUS ! *************************/
 RT_MUTEX mutex_errorsCounter;
+RT_MUTEX mutex_com;
 /***********************************************************/
 
 // Déclaration des sémaphores
@@ -108,6 +109,10 @@ void initStruct(void) {
         exit(EXIT_FAILURE);
     }
     if (err = rt_mutex_create(&mutex_move, NULL)) {
+        printf("Error mutex create: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
+    if (err = rt_mutex_create(&mutex_com, NULL)) {
         printf("Error mutex create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
@@ -203,10 +208,10 @@ void startTasks() {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
-    /*if (err = rt_task_start(&th_move, &f_move, NULL)) {
+    if (err = rt_task_start(&th_move, &f_move, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
-    }*/
+    }
     
     /************************ A NOUS ! *************************/
     

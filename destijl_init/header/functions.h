@@ -39,6 +39,7 @@ extern RT_TASK th_move;
 
 extern RT_MUTEX mutex_robotStarted;
 extern RT_MUTEX mutex_move;
+extern RT_MUTEX mutex_com;
 
 extern RT_SEM sem_barrier;
 extern RT_SEM sem_openComRobot;
