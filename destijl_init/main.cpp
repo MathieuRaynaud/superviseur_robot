@@ -39,6 +39,10 @@ int PRIORITY_TBATTERY = 5;
 RT_MUTEX mutex_robotStarted;
 RT_MUTEX mutex_move;
 
+/************************ A NOUS ! *************************/
+RT_MUTEX mutex_errorsCounter;
+/***********************************************************/
+
 // Déclaration des sémaphores
 RT_SEM sem_barrier;
 RT_SEM sem_openComRobot;
@@ -54,6 +58,10 @@ int MSG_QUEUE_SIZE = 10;
 int etatCommMoniteur = 1;
 int robotStarted = 0;
 char move = DMB_STOP_MOVE;
+
+/************************ A NOUS ! *************************/
+int errorsCounter = 0;
+/***********************************************************/
 
 /**
  * \fn void initStruct(void)
@@ -156,7 +164,11 @@ void initStruct(void) {
     
     /************************ A NOUS ! *************************/
     
-    /* Creation des mutex */
+    /* Creation des mutex */    
+    if (err = rt_mutex_create(&mutex_errorsCounter, NULL)) {
+        printf("Error mutex create: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
     
     /* Creation du semaphore */
     
@@ -196,17 +208,20 @@ void startTasks() {
         exit(EXIT_FAILURE);
     }*/
     
-    if (err = rt_task_start(&th_server, &f_server, NULL)) {
-        printf("Error task start: %s\n", strerror(-err));
-        exit(EXIT_FAILURE);
-    }
-    
     /************************ A NOUS ! *************************/
     
     if (err = rt_task_start(&th_displayBattery, &f_displayBattery, NULL)) {
         printf("Error task start: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
+    /***********************************************************/
+    
+    if (err = rt_task_start(&th_server, &f_server, NULL)) {
+        printf("Error task start: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
+    
+    
 }
 
 void deleteTasks() {

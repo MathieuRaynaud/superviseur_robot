@@ -228,17 +228,42 @@ void write_in_queue(RT_QUEUE *queue, MessageToMon msg) {
 
 void f_displayBattery(void *arg) {
     rt_task_set_periodic(NULL, TM_NOW, 900000000); // en ns
-    int level = -1;
+    int level;
+    char * battery = "Battery level : ";
+    char * lvl;
     while (1) {
-        
+        lvl = "0";
+        rt_task_wait_period(NULL);
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         if (robotStarted) {
             level = send_command_to_robot(DMB_GET_VBAT);
+            switch (level){
+                case -1 :
+                    send_message_to_monitor(HEADER_STM_NO_ACK,"Cannot get battery level : robot error");
+                    break;
+                case -3 :
+                    send_message_to_monitor(HEADER_STM_NO_ACK,"Cannot get battery level : connexion lost");
+                    break;
+                default :
+                    lvl += level;
+                    strcat(battery,lvl);
+                    send_message_to_monitor(HEADER_STM_MES, battery);
+                    break;
+            }
         }   
         rt_mutex_release(&mutex_robotStarted);
-        
-        rt_task_wait_period(NULL);
-        printf("Coucou test %d\n", level);
+    }   
+}
+
+void f_errorsCounter(void *arg) {
+    rt_mutex_acquire(&mutex_errorsCounter, TM_INFINITE);
+    errorsCounter++;
+    if (errorsCounter >= 3){
+        close_communication_robot();
+        rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
+        robotStarted = 0;
+        rt_mutex_release(&mutex_robotStarted);
+        errorsCounter = 0;        
     }
-        
+    rt_mutex_release(&mutex_errorsCounter);
 }

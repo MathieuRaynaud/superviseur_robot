@@ -60,6 +60,7 @@ extern int PRIORITY_TSENDTOMON;
 extern int PRIORITY_TRECEIVEFROMMON;
 extern int PRIORITY_TSTARTROBOT;
 
+
 void f_server(void *arg);
 void f_sendToMon(void *arg);
 void f_receiveFromMon(void *arg);
@@ -68,8 +69,12 @@ void f_move(void *arg);
 void f_startRobot(void *arg);
 
 /************************ A NOUS ! *************************/
+extern RT_MUTEX mutex_errorsCounter;
+
+extern int errorsCounter;
 
 void f_displayBattery(void *arg);
+void f_errorsCounter(void *arg);
 
 #endif /* FUNCTIONS_H */
 
