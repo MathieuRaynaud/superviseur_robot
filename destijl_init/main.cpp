@@ -178,7 +178,7 @@ void initStruct(void) {
     /* Creation du semaphore */
     
     /* Creation des taches */
-     if (err = rt_task_create(&th_displayBattery, "th_displayBattery", 0, PRIORITY_TBATTERY, 0)) {
+    if (err = rt_task_create(&th_displayBattery, "th_displayBattery", 0, PRIORITY_TBATTERY, 0)) {
         printf("Error task create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }

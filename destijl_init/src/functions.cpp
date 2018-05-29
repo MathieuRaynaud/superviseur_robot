@@ -91,11 +91,25 @@ void f_receiveFromMon(void *arg) {
         } else if (strcmp(msg.header, HEADER_MTS_DMB_ORDER) == 0) {
             if (msg.data[0] == DMB_START_WITHOUT_WD) { // Start robot
 #ifdef _WITH_TRACE_
-                printf("%s: message start robot\n", info.name);
+                printf("%s: message start robot without watchdog\n", info.name);
 #endif 
+                //rt_mutex_acquire(&mutex_watchdog, TM_INFINITE);
+                //watchdog = DMB_START_WITHOUT_WD;
+                //rt_mutex_release(&mutex_watchdog);
                 rt_sem_v(&sem_startRobot);
-
-            } else if ((msg.data[0] == DMB_GO_BACK)
+            } 
+            /*********** Gestion du Watchdog *************/
+            /*else if (msg.data[0] == DMB_START_WITH_WD) {
+#ifdef _WITH_TRACE_
+                printf("%s: message start robot with watchdog\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_watchdog, TM_INFINITE);
+                watchdog = DMB_START_WITH_WD;
+                rt_mutex_release(&mutex_watchdog);
+                rt_sem_v(&sem_startRobot);
+            }*/
+            /********************************************/
+            else if ((msg.data[0] == DMB_GO_BACK)
                     || (msg.data[0] == DMB_GO_FORWARD)
                     || (msg.data[0] == DMB_GO_LEFT)
                     || (msg.data[0] == DMB_GO_RIGHT)
@@ -166,6 +180,21 @@ void f_startRobot(void * arg) {
 #endif
         rt_mutex_acquire(&mutex_com, TM_INFINITE);
         err = send_command_to_robot(DMB_START_WITHOUT_WD);
+        /********* Gestion du watchdog ajoutee par nos soins **************/
+        /*rt_mutex_acquire(&mutex_watchdog, TM_INFINITE);
+        switch (watchdog){
+            case DMB_START_WITHOUT_WD:
+                err = send_command_to_robot(DMB_START_WITHOUT_WD);
+                break;
+            case DMB_START_WITH_WD :
+                err = send_command_to_robot(DMB_START_WITH_WD);
+                break;
+            default : 
+                printf("Unknown command for starting robot with or without watchdog");
+                break;
+        }
+        rt_mutex_release(&mutex_watchdog);*/
+        /*****************************************************************/
         rt_mutex_release(&mutex_com);
         if (err == 0) {
 #ifdef _WITH_TRACE_
@@ -238,33 +267,34 @@ void f_displayBattery(void *arg) {
     rt_task_set_periodic(NULL, TM_NOW, 900000000); // en ns
     int level;
     while (1) {
-        printf("   ****** Thread battery running\n");
+        //printf("   ****** Thread battery running\n");
         rt_task_wait_period(NULL);
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         if (robotStarted) {
             rt_mutex_acquire(&mutex_com, TM_INFINITE);
             level = send_command_to_robot(DMB_GET_VBAT);
             rt_mutex_release(&mutex_com);
-            printf("   ****** After send to robot %d\n", level);
+            //printf("   ****** After send to robot %d\n", level);
             switch (level){
                 case -1 :
                     send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : robot error");
+                    f_errorsCounter();
                     break;
                 case -2 :
                     send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : unknown command");
+                    f_errorsCounter();
                     break;
                 case -3 :
                     send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : time out");
+                    f_errorsCounter();
                     break;
                 case -4 :
                     send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : checksum error");
+                    f_errorsCounter();
                     break;
                 default :
-                    printf("   ****** Default b %d\n", level);
                     level += 48;
-                    printf("   ****** Default c %d\n", level);
                     send_message_to_monitor(HEADER_STM_BAT, &level);
-                    printf("   ****** Default d %d\n", level);
                     break;
             }
         }   
@@ -272,16 +302,24 @@ void f_displayBattery(void *arg) {
     }   
 }
 
-void f_errorsCounter(void *arg) {
-    printf("***$****Errors counter called*****$*****\n");
+void f_errorsCounter(void) {
+    printf("*****$*****Errors counter called*****$*****\n");
     rt_mutex_acquire(&mutex_errorsCounter, TM_INFINITE);
     errorsCounter++;
     if (errorsCounter >= 3){
+        send_message_to_monitor(HEADER_STM_NO_ACK, NULL);
         close_communication_robot();
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         robotStarted = 0;
         rt_mutex_release(&mutex_robotStarted);
-        errorsCounter = 0;        
+        errorsCounter = 0;
     }
     rt_mutex_release(&mutex_errorsCounter);
 }
+
+/*void f_watchdog(void *arg){
+    printf("****** Watchdog launched ******");
+    while (1){
+        // ON NE FAIT PAS CAR N'EST PAS IMPLEMENTE SUR LES ROBOTS
+    }
+}*/

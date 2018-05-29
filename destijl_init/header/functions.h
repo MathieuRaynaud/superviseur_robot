@@ -71,11 +71,13 @@ void f_startRobot(void *arg);
 
 /************************ A NOUS ! *************************/
 extern RT_MUTEX mutex_errorsCounter;
+//extern RT_MUTEX mutex_watchdog;
 
 extern int errorsCounter;
+//extern char watchdog;
 
 void f_displayBattery(void *arg);
-void f_errorsCounter(void *arg);
+void f_errorsCounter(void);
 
 #endif /* FUNCTIONS_H */
 
