@@ -264,7 +264,7 @@ void write_in_queue(RT_QUEUE *queue, MessageToMon msg) {
 
 void f_displayBattery(void *arg) {
     printf("   ****** Thread battery launched\n");
-    rt_task_set_periodic(NULL, TM_NOW, 900000000); // en ns
+    rt_task_set_periodic(NULL, TM_NOW, 1000000000); // en ns
     int level;
     while (1) {
         //printf("   ****** Thread battery running\n");
@@ -277,19 +277,15 @@ void f_displayBattery(void *arg) {
             //printf("   ****** After send to robot %d\n", level);
             switch (level){
                 case -1 :
-                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : robot error");
                     f_errorsCounter();
                     break;
                 case -2 :
-                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : unknown command");
                     f_errorsCounter();
                     break;
                 case -3 :
-                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : time out");
                     f_errorsCounter();
                     break;
                 case -4 :
-                    send_message_to_monitor(HEADER_STM_LOST_DMB,"Cannot get battery level : checksum error");
                     f_errorsCounter();
                     break;
                 default :
@@ -307,7 +303,7 @@ void f_errorsCounter(void) {
     rt_mutex_acquire(&mutex_errorsCounter, TM_INFINITE);
     errorsCounter++;
     if (errorsCounter >= 3){
-        send_message_to_monitor(HEADER_STM_NO_ACK, NULL);
+        send_message_to_monitor(HEADER_STM_LOST_DMB, NULL);
         close_communication_robot();
         rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
         robotStarted = 0;
@@ -315,6 +311,34 @@ void f_errorsCounter(void) {
         errorsCounter = 0;
     }
     rt_mutex_release(&mutex_errorsCounter);
+}
+
+void f_startCamera (void *arg){
+    while (1){
+        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+        cameraStarted = open_camera(*Camera);
+        if (cameraStarted == -1){
+            send_message_to_monitor(HEADER_MTS_MSG, "Communication error with camera");
+        }
+        rt_mutex_release(&mutex_camera);
+    }  
+}
+
+void f_envoiImages (void *arg){
+    int err;
+    Image * imageCapturee;
+    
+    rt_task_set_periodic(NULL, TM_NOW, 100000000); // en ns -> 100 ms
+    while (1){
+        rt_task_wait_period(NULL);
+        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
+        if (cameraStarted == 0){
+            err = get_image(*Camera, imageCapturee);
+            if (err == 0) send_message_to_monitor(HEADER_STM_IMAGE, imageCapturee);
+            else printf("Error while sending image to monitor");
+        }
+        rt_mutex_release(&mutex_camera);
+    }
 }
 
 /*void f_watchdog(void *arg){

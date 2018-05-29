@@ -70,14 +70,20 @@ void f_move(void *arg);
 void f_startRobot(void *arg);
 
 /************************ A NOUS ! *************************/
+extern int PRIORITY_TCAMERA;
+
 extern RT_MUTEX mutex_errorsCounter;
+extern RT_MUTEX mutex_camera;
 //extern RT_MUTEX mutex_watchdog;
 
 extern int errorsCounter;
+extern int cameraStarted;
 //extern char watchdog;
 
 void f_displayBattery(void *arg);
 void f_errorsCounter(void);
+void f_startCamera(void *arg);
+void f_envoiImages(void *arg);
 
 #endif /* FUNCTIONS_H */
 
