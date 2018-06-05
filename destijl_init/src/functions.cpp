@@ -97,7 +97,7 @@ void f_receiveFromMon(void *arg) {
                 //watchdog = DMB_START_WITHOUT_WD;
                 //rt_mutex_release(&mutex_watchdog);
                 rt_sem_v(&sem_startRobot);
-            } 
+            }
             /*********** Gestion du Watchdog *************/
             /*else if (msg.data[0] == DMB_START_WITH_WD) {
 #ifdef _WITH_TRACE_
@@ -122,6 +122,50 @@ void f_receiveFromMon(void *arg) {
                 printf("%s: message update movement with %c\n", info.name, move);
 #endif
 
+            }
+        }
+        /******************************************************/
+        /**************** Gestion de la camera ****************/
+        /******************************************************/
+        else if (strcmp(msg.header, HEADER_MTS_CAMERA) == 0) {
+            if (msg.data[0] == CAM_OPEN) { // Open Camera
+#ifdef _WITH_TRACE_
+                printf("%s: message start camera\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_cameraRequest, TM_INFINITE);
+                cameraRequest = 1;
+                rt_mutex_release(&mutex_cameraRequest);
+            } else if (msg.data[0] == CAM_CLOSE) { // Close Camera
+#ifdef _WITH_TRACE_
+                printf("%s: message close camera\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_cameraRequest, TM_INFINITE);
+                cameraRequest = 2;
+                rt_mutex_release(&mutex_cameraRequest);         
+            }
+            else if (msg.data[0] == CAM_ASK_ARENA) { // Detect Arena
+#ifdef _WITH_TRACE_
+                printf("%s: message detect arena\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+                cameraFSMState = 3;
+                rt_mutex_release(&mutex_cameraFSMState);
+            }
+            else if (msg.data[0] == CAM_ARENA_CONFIRM) { // Detect Arena
+#ifdef _WITH_TRACE_
+                printf("%s: message detect arena\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+                arenaState = 1;
+                rt_mutex_release(&mutex_arenaState);
+            }
+            else if (msg.data[0] == CAM_ARENA_INFIRM) { // Detect Arena
+#ifdef _WITH_TRACE_
+                printf("%s: message detect arena\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+                arenaState = 0;
+                rt_mutex_release(&mutex_arenaState);
             }
         }
     } while (err > 0);
@@ -313,31 +357,106 @@ void f_errorsCounter(void) {
     rt_mutex_release(&mutex_errorsCounter);
 }
 
-void f_startCamera (void *arg){
+void f_camera (void *arg){
+    int err = 2;
+    printf("   ****** Thread startCamera launched\n");
+    
+    rt_task_set_periodic(NULL, TM_NOW, 100000000);
+    
     while (1){
-        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
-        cameraStarted = open_camera(*Camera);
-        if (cameraStarted == -1){
-            send_message_to_monitor(HEADER_MTS_MSG, "Communication error with camera");
+        rt_task_wait_period(NULL);
+        //printf("startCamera : Dans le while\n");
+        rt_mutex_acquire(&mutex_cameraRequest, TM_INFINITE);
+        //printf("startCamera : Apres prise mutex cameraRequest\n");
+        if (cameraRequest == 1){
+            //printf("startCamera : cameraRequest == 1\n");
+            rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+            //printf("startCamera : Apres prise mutex cameraFSMState\n");
+            if (cameraFSMState == 0){
+                err = open_camera(&RaspiCam);
+                if (err == 0){
+                    cameraFSMState = 1;
+                    cameraRequest = 0;
+                    send_message_to_monitor(HEADER_STM_ACK, "Camera started");
+                } else if (err == -1){
+                    send_message_to_monitor(HEADER_MTS_MSG, "Communication error with camera");
+                }
+            }
+            rt_mutex_release(&mutex_cameraFSMState);
         }
-        rt_mutex_release(&mutex_camera);
-    }  
+        else if(cameraRequest == 2){
+            rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+            rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+            close_camera(&RaspiCam);
+            send_message_to_monitor(HEADER_STM_ACK, "Camera closed");
+            cameraFSMState = 0;
+            cameraRequest = 0;
+            arenaState = -1;
+            rt_mutex_release(&mutex_arenaState);
+            rt_mutex_release(&mutex_cameraFSMState);
+        }
+        rt_mutex_release(&mutex_cameraRequest);
+    }
 }
 
 void f_envoiImages (void *arg){
-    int err;
-    Image * imageCapturee;
+    printf("   ****** Thread envoiImages launched\n");
+    Image imageCapturee;
+    Image imageOutput;
+    Jpg  imageCompressee;
+    Arene monArene;
+    Position maPosition;
+    
     
     rt_task_set_periodic(NULL, TM_NOW, 100000000); // en ns -> 100 ms
-    while (1){
+    
+    while(1){
         rt_task_wait_period(NULL);
-        rt_mutex_acquire(&mutex_camera, TM_INFINITE);
-        if (cameraStarted == 0){
-            err = get_image(*Camera, imageCapturee);
-            if (err == 0) send_message_to_monitor(HEADER_STM_IMAGE, imageCapturee);
-            else printf("Error while sending image to monitor");
+        rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+        if (cameraFSMState == 1){
+            get_image(&RaspiCam, &imageCapturee);
+            compress_image(&imageCapturee, &imageCompressee);
+            send_message_to_monitor(HEADER_STM_IMAGE, &imageCompressee);
+        }   else if (cameraFSMState == 2){
+            rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+            if (arenaState == 1){
+                get_image(&RaspiCam, &imageCapturee);
+                if (detect_position(&imageCapturee, &maPosition, &monArene) < 0){
+                    send_message_to_monitor(HEADER_STM_NO_ACK, "Error while detecting position");
+                }
+                else {
+                    get_image(&RaspiCam, &imageCapturee);
+                    draw_position(&imageCapturee, &imageOutput, &maPosition);
+                    compress_image(&imageOutput, &imageCompressee);
+                    send_message_to_monitor(HEADER_STM_IMAGE, &imageCompressee);
+                }
+            }
+            rt_mutex_release(&mutex_arenaState);
         }
-        rt_mutex_release(&mutex_camera);
+        else if (cameraFSMState == 3){
+            rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+            arenaState = -1;
+            rt_mutex_release(&mutex_arenaState);
+            get_image(&RaspiCam, &imageCapturee);
+            if(detect_arena(&imageCapturee, &monArene) < 0) {
+                send_message_to_monitor(HEADER_STM_NO_ACK, "Arena not detected");
+            }
+            draw_arena(&imageCapturee, &imageOutput, &monArene);
+            compress_image(&imageOutput, &imageCompressee);
+            send_message_to_monitor(HEADER_STM_IMAGE, &imageCompressee);
+            cameraFSMState = 4;
+        } else if (cameraFSMState == 4){
+            rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
+            if (arenaState == 1){
+                cameraFSMState = 3;
+            } else if (arenaState == 0){
+                cameraFSMState = 5;
+            }
+            rt_mutex_release(&mutex_arenaState);            
+        } else if (cameraFSMState == 5){
+            cameraFSMState = 1;          
+        }
+        rt_mutex_release(&mutex_cameraFSMState);
     }
 }
 

@@ -73,17 +73,24 @@ void f_startRobot(void *arg);
 extern int PRIORITY_TCAMERA;
 
 extern RT_MUTEX mutex_errorsCounter;
-extern RT_MUTEX mutex_camera;
+extern RT_MUTEX mutex_cameraFSMState;
+extern RT_MUTEX mutex_cameraRequest;
+extern RT_MUTEX mutex_arenaState;
 //extern RT_MUTEX mutex_watchdog;
 
 extern int errorsCounter;
-extern int cameraStarted;
+extern int cameraFSMState;
+extern int cameraRequest;
+extern int arenaState;
 //extern char watchdog;
+
+extern Camera RaspiCam;
 
 void f_displayBattery(void *arg);
 void f_errorsCounter(void);
-void f_startCamera(void *arg);
+void f_camera(void *arg);
 void f_envoiImages(void *arg);
+void threadVideo(void *arg);
 
 #endif /* FUNCTIONS_H */
 
