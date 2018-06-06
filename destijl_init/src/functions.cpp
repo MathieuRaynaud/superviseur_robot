@@ -123,6 +123,14 @@ void f_receiveFromMon(void *arg) {
 #endif
 
             }
+            else if (msg.data[0] == DMB_IDLE) { // IDLE
+#ifdef _WITH_TRACE_
+                printf("%s: message robot idle\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
+                robotStarted = 0;
+                rt_mutex_release(&mutex_robotStarted);
+            }
         }
         /******************************************************/
         /**************** Gestion de la camera ****************/
@@ -149,6 +157,22 @@ void f_receiveFromMon(void *arg) {
 #endif 
                 rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
                 cameraFSMState = 3;
+                rt_mutex_release(&mutex_cameraFSMState);
+            }
+            else if (msg.data[0] == CAM_COMPUTE_POSITION) { // Compute position
+#ifdef _WITH_TRACE_
+                printf("%s: message compute position\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+                cameraFSMState = 2;
+                rt_mutex_release(&mutex_cameraFSMState);
+            }
+            else if (msg.data[0] == CAM_STOP_COMPUTE_POSITION) { // Stop compute position
+#ifdef _WITH_TRACE_
+                printf("%s: message stop compute position\n", info.name);
+#endif 
+                rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
+                cameraFSMState = 1;
                 rt_mutex_release(&mutex_cameraFSMState);
             }
             else if (msg.data[0] == CAM_ARENA_CONFIRM) { // Detect Arena
@@ -361,17 +385,13 @@ void f_camera (void *arg){
     int err = 2;
     printf("   ****** Thread startCamera launched\n");
     
-    rt_task_set_periodic(NULL, TM_NOW, 100000000);
+    rt_task_set_periodic(NULL, TM_NOW, 100);
     
     while (1){
         rt_task_wait_period(NULL);
-        //printf("startCamera : Dans le while\n");
         rt_mutex_acquire(&mutex_cameraRequest, TM_INFINITE);
-        //printf("startCamera : Apres prise mutex cameraRequest\n");
         if (cameraRequest == 1){
-            //printf("startCamera : cameraRequest == 1\n");
             rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
-            //printf("startCamera : Apres prise mutex cameraFSMState\n");
             if (cameraFSMState == 0){
                 err = open_camera(&RaspiCam);
                 if (err == 0){
@@ -414,10 +434,16 @@ void f_envoiImages (void *arg){
         rt_task_wait_period(NULL);
         rt_mutex_acquire(&mutex_cameraFSMState, TM_INFINITE);
         if (cameraFSMState == 1){
+            rt_mutex_acquire(&mutex_mem, TM_INFINITE);
+            mem = 1;
+            rt_mutex_release(&mutex_mem);
             get_image(&RaspiCam, &imageCapturee);
             compress_image(&imageCapturee, &imageCompressee);
             send_message_to_monitor(HEADER_STM_IMAGE, &imageCompressee);
         }   else if (cameraFSMState == 2){
+            rt_mutex_acquire(&mutex_mem, TM_INFINITE);
+            mem = 2;
+            rt_mutex_release(&mutex_mem);
             rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
             if (arenaState == 1){
                 get_image(&RaspiCam, &imageCapturee);
@@ -425,13 +451,14 @@ void f_envoiImages (void *arg){
                     send_message_to_monitor(HEADER_STM_NO_ACK, "Error while detecting position");
                 }
                 else {
+                    send_message_to_monitor(HEADER_STM_POS, &maPosition);
                     get_image(&RaspiCam, &imageCapturee);
                     draw_position(&imageCapturee, &imageOutput, &maPosition);
                     compress_image(&imageOutput, &imageCompressee);
                     send_message_to_monitor(HEADER_STM_IMAGE, &imageCompressee);
                 }
-            }
-            rt_mutex_release(&mutex_arenaState);
+        }
+        rt_mutex_release(&mutex_arenaState);
         }
         else if (cameraFSMState == 3){
             rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
@@ -448,13 +475,13 @@ void f_envoiImages (void *arg){
         } else if (cameraFSMState == 4){
             rt_mutex_acquire(&mutex_arenaState, TM_INFINITE);
             if (arenaState == 1){
-                cameraFSMState = 3;
-            } else if (arenaState == 0){
                 cameraFSMState = 5;
+            } else if (arenaState == 0){
+                cameraFSMState = mem;
             }
             rt_mutex_release(&mutex_arenaState);            
         } else if (cameraFSMState == 5){
-            cameraFSMState = 1;          
+            cameraFSMState = mem;          
         }
         rt_mutex_release(&mutex_cameraFSMState);
     }

@@ -50,6 +50,7 @@ RT_MUTEX mutex_com;
 RT_MUTEX mutex_cameraRequest;
 RT_MUTEX mutex_cameraFSMState;
 RT_MUTEX mutex_arenaState;
+RT_MUTEX mutex_mem;
 /***********************************************************/
 
 // Déclaration des sémaphores
@@ -73,6 +74,7 @@ int errorsCounter = 0;
 int cameraFSMState = 0;
 int cameraRequest = 0;
 int arenaState = -1;
+int mem = 1;
 
 Camera RaspiCam;
 /***********************************************************/
@@ -199,7 +201,10 @@ void initStruct(void) {
         printf("Error mutex create: %s\n", strerror(-err));
         exit(EXIT_FAILURE);
     }
-    
+    if (err = rt_mutex_create(&mutex_mem, NULL)) {
+        printf("Error mutex create: %s\n", strerror(-err));
+        exit(EXIT_FAILURE);
+    }
     /* Creation du semaphore */
     
     /* Creation des taches */

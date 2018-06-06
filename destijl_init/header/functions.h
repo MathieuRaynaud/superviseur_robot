@@ -76,12 +76,14 @@ extern RT_MUTEX mutex_errorsCounter;
 extern RT_MUTEX mutex_cameraFSMState;
 extern RT_MUTEX mutex_cameraRequest;
 extern RT_MUTEX mutex_arenaState;
+extern RT_MUTEX mutex_mem;
 //extern RT_MUTEX mutex_watchdog;
 
 extern int errorsCounter;
 extern int cameraFSMState;
 extern int cameraRequest;
 extern int arenaState;
+extern int mem;
 //extern char watchdog;
 
 extern Camera RaspiCam;
